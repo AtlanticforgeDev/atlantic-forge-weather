@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atlantic Forge Weather</title>
+</head>
+
+<body>
+
+    <h1>Atlantic Forge Weather</h1>
+    <h2>Weather Intelligence Platform</h2>
+
+    <p><strong>System Status:</strong> ONLINE</p>
+
+    <hr>
+
+    <h2>Weather Data</h2>
+
+    <h3>NOAA / National Weather Service</h3>
+    <p>Current conditions, forecasts, alerts and warnings.</p>
+
+    <div id="weather">
+        <p>Loading live NOAA forecast...</p>
+    </div>
+
+    <script>
+        async function loadWeather() {
+            try {
+                const response = await fetch("/api/weather");
+                const data = await response.json();
+
+                document.getElementById("weather").innerHTML = `
+                    <h3>Live Forecast</h3>
+                    <p><strong>${data.period}</strong></p>
+                    <p><strong>${data.temperature}°${data.unit}</strong> — ${data.forecast}</p>
+                    <p>${data.details}</p>
+                `;
+            } catch (error) {
+                document.getElementById("weather").innerHTML =
+                    "<p>Weather data temporarily unavailable.</p>";
+            }
+        }
+
+        loadWeather();
+    </script>
+
+    <h3>GOES-19 Satellite</h3>
+    <p>Satellite imagery and atmospheric monitoring.</p>
+
+    <h3>NOAA Buoy Network</h3>
+    <p>Ocean temperature, wind, waves and marine observations.</p>
+
+    <h3>ENSO</h3>
+    <p>El Niño and La Niña monitoring and analysis.</p>
+
+    <h3>Storm Tracking</h3>
+    <p>Atlantic tropical systems and severe weather monitoring.</p>
+
+    <hr>
+
+    <p>Atlantic Forge Weather — v0.1</p>
+
+</body>
+
+</html>
