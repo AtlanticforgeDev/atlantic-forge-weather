@@ -1,67 +1,513 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Atlantic Forge Weather</title>
+
+    <title>Atlantic Forge Weather Intelligence</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #071426;
+            color: #e8f1ff;
+        }
+
+        header {
+            padding: 28px 40px;
+            background: #0b2d59;
+            border-bottom: 1px solid #1e5c96;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 30px;
+        }
+
+        header p {
+            margin: 8px 0 0;
+            color: #9fc7ee;
+        }
+
+        .status {
+            display: inline-block;
+            margin-top: 12px;
+            padding: 5px 10px;
+            border: 1px solid #28c76f;
+            border-radius: 5px;
+            color: #61e89b;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 35px 25px;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: #0c2038;
+            border: 1px solid #1d5689;
+            border-radius: 12px;
+            padding: 22px;
+        }
+
+        .card h3 {
+            margin-top: 0;
+            color: #55b7ff;
+        }
+
+        .label {
+            color: #9db7cf;
+            font-size: 14px;
+        }
+
+        .big {
+            font-size: 34px;
+            font-weight: bold;
+            margin: 8px 0 18px;
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            padding: 10px 0;
+            border-bottom: 1px solid #193a59;
+        }
+
+        .row:last-child {
+            border-bottom: none;
+        }
+
+        .value {
+            text-align: right;
+            font-weight: bold;
+        }
+
+        .online {
+            color: #55e994;
+        }
+
+        .pending {
+            color: #ffd166;
+        }
+
+        .error {
+            color: #ff8585;
+        }
+
+        footer {
+            text-align: center;
+            color: #728da7;
+            padding: 30px;
+        }
+    </style>
+<script src="https://cdn.plot.ly/plotly-4.1.1.min.js" charset="utf-8"></script>
 </head>
 
 <body>
 
+<header>
     <h1>Atlantic Forge Weather</h1>
-    <h2>Weather Intelligence Platform</h2>
+    <p>Weather Intelligence Platform</p>
+    <div class="status">SYSTEM ONLINE</div>
+</header>
 
-    <p><strong>System Status:</strong> ONLINE</p>
+<main>
 
-    <hr>
+    
+<section class="card" style="margin-bottom:24px">
+    <h3>ENSO Climate Monitor</h3>
+    <div id="enso"><p>Loading NOAA climate data...</p></div>
+</section>
 
-    <h2>Weather Data</h2>
+<section class="card" style="margin-bottom:24px">
+    <h3>RONI History</h3>
+    <p class="label">Latest 24 three-month seasons · NOAA CPC observations</p>
+    <div id="ensoTrend" style="height:320px">Loading history...</div>
+</section>
+<h2>Live Weather Intelligence</h2>
 
-    <h3>NOAA / National Weather Service</h3>
-    <p>Current conditions, forecasts, alerts and warnings.</p>
+    <div class="grid">
 
-    <div id="weather">
-        <p>Loading live NOAA forecast...</p>
+        <!-- NWS WEATHER -->
+
+        <section class="card">
+            <h3>NOAA / National Weather Service</h3>
+            <div id="weather">
+                <p>Loading NWS forecast...</p>
+            </div>
+        </section>
+
+        <!-- NOAA BUOY -->
+
+<section class="card">
+    <h3>NOAA Buoy Network</h3>
+
+    <select id="buoySelect" onchange="loadBuoy(this.value)">
+        <option value="44014">Virginia Beach - 44014</option>
+        <option value="41025">Diamond Shoals / Outer Banks - 41025</option>
+    </select>
+
+    <div id="buoy">
+        <p>Loading buoy 44014...</p>
+    </div>
+</section>
+
+        <!-- GOES -->
+
+        <section class="card">
+            <h3>GOES-19 Satellite</h3>
+            <div id="goes19">
+    <p>Loading GOES-19 satellite imagery...</p>
+</div>
+        </section>
+
+        <!-- STORM TRACKING -->
+
+        <section class="card">
+            <h3>Atlantic Storm Tracking</h3>
+            <p>Tropical systems, hurricanes and severe weather monitoring.</p>
+        </section>
+
+        <!-- PLATFORM STATUS -->
+
+        <section class="card">
+            <h3>Platform Status</h3>
+
+            <div class="row">
+                <span>NWS API</span>
+                <span class="online">ONLINE</span>
+            </div>
+
+            <div class="row">
+                <span>NOAA Buoys</span>
+                <span class="online">ONLINE</span>
+            </div>
+
+            <div class="row">
+                <span>GOES-19</span>
+                <span class="online">ONLINE</span>
+            </div>
+
+            <div class="row">
+                <span>ENSO</span>
+                <span id="ensoStatus" class="pending">PENDING</span>
+            </div>
+        </section>
+
     </div>
 
-    <script>
-        async function loadWeather() {
-            try {
-                const response = await fetch("/api/weather");
-                const data = await response.json();
+</main>
 
-                document.getElementById("weather").innerHTML = `
-                    <h3>Live Forecast</h3>
-                    <p><strong>${data.period}</strong></p>
-                    <p><strong>${data.temperature}°${data.unit}</strong> — ${data.forecast}</p>
-                    <p>${data.details}</p>
-                `;
-            } catch (error) {
-                document.getElementById("weather").innerHTML =
-                    "<p>Weather data temporarily unavailable.</p>";
-            }
+<footer>
+    Atlantic Forge Weather Intelligence
+</footer>
+
+<script>
+
+function show(value) {
+    if (
+        value === null ||
+        value === undefined ||
+        value === "" ||
+        value === "MM"
+    ) {
+        return "Not reported";
+    }
+
+    return value;
+}
+
+
+/* -------------------------
+   NATIONAL WEATHER SERVICE
+------------------------- */
+
+async function loadWeather() {
+
+    try {
+
+        const response = await fetch("/api/weather");
+
+        if (!response.ok) {
+            throw new Error("NWS API error");
         }
 
-        loadWeather();
-    </script>
+        const data = await response.json();
 
-    <h3>GOES-19 Satellite</h3>
-    <p>Satellite imagery and atmospheric monitoring.</p>
+        document.getElementById("weather").innerHTML = `
+            <div class="label">Current Forecast</div>
 
-    <h3>NOAA Buoy Network</h3>
-    <p>Ocean temperature, wind, waves and marine observations.</p>
+            <div class="big">
+                ${show(data.temperature)}°F
+            </div>
 
-    <h3>ENSO</h3>
-    <p>El Niño and La Niña monitoring and analysis.</p>
+            <div class="row">
+                <span class="label">Period</span>
+                <span class="value">${show(data.period)}</span>
+            </div>
 
-    <h3>Storm Tracking</h3>
-    <p>Atlantic tropical systems and severe weather monitoring.</p>
+            <p>
+                ${show(data.forecast)}
+            </p>
 
-    <hr>
+            <p>
+                ${show(data.details)}
+            </p>
+        `;
 
-    <p>Atlantic Forge Weather — v0.1</p>
+    } catch (error) {
+
+        document.getElementById("weather").innerHTML =
+            `<p class="error">Weather data temporarily unavailable.</p>`;
+
+    }
+}
+
+
+/* -------------------------
+   NOAA BUOY 44014
+------------------------- */
+
+async function loadBuoy(station = "44014") {
+
+    try {
+
+        const response = await fetch(`/api/buoy/${station}`);
+
+        if (!response.ok) {
+            throw new Error("Buoy API error");
+        }
+
+        const data = await response.json();
+
+        document.getElementById("buoy").innerHTML = `
+
+            <div class="label">Station</div>
+
+            <div class="big">
+                ${show(data.station)}
+            </div>
+
+
+            <div class="row">
+                <span class="label">Water Temperature</span>
+
+                <span class="value">
+                    ${show(data.water_temperature_f)} °F /
+                    ${show(data.water_temperature_c)} °C
+                </span>
+            </div>
+
+
+            <div class="row">
+                <span class="label">Air Temperature</span>
+
+                <span class="value">
+                    ${show(data.air_temperature_f)} °F /
+                    ${show(data.air_temperature_c)} °C
+                </span>
+            </div>
+
+
+            <div class="row">
+                <span class="label">Dew Point</span>
+
+                <span class="value">
+                    ${show(data.dew_point_f)} °F /
+                    ${show(data.dew_point_c)} °C
+                </span>
+            </div>
+
+
+            <div class="row">
+                <span class="label">Wind Direction</span>
+
+                <span class="value">
+                    ${show(data.wind_direction_deg)}°
+                </span>
+            </div>
+
+
+            <div class="row">
+                <span class="label">Wind Speed</span>
+
+                <span class="value">
+                    ${show(data.wind_speed_mph)} mph /
+                    ${show(data.wind_speed_mps)} m/s
+                </span>
+            </div>
+
+
+            <div class="row">
+                <span class="label">Wind Gust</span>
+
+                <span class="value">
+                    ${show(data.wind_gust_mph)} mph /
+                    ${show(data.wind_gust_mps)} m/s
+                </span>
+            </div>
+
+
+            <div class="row">
+                <span class="label">Wave Height<br><small>${data.wave_observations?.WVHT ? data.wave_observations.WVHT.age_minutes + ' min old at load' : 'No reading within 3 hours'}</small></span>
+
+                <span class="value">
+                    ${show(data.wave_height_ft)} ft /
+                    ${show(data.wave_height_m)} m
+                </span>
+            </div>
+
+
+            <div class="row">
+                <span class="label">Dominant Wave Period<br><small>${data.wave_observations?.DPD ? data.wave_observations.DPD.age_minutes + ' min old at load' : 'No reading within 3 hours'}</small></span>
+
+                <span class="value">
+                    ${show(data.dominant_wave_period_sec)} sec
+                </span>
+            </div>
+
+
+            <div class="row">
+                <span class="label">Pressure</span>
+
+                <span class="value">
+                    ${show(data.pressure_hpa)} hPa
+                </span>
+            </div>
+
+        `;
+
+    } catch (error) {
+
+        document.getElementById("buoy").innerHTML =
+            `<p class="error">NOAA buoy data temporarily unavailable.</p>`;
+
+    }
+}
+
+/* -----------------------
+   GOES-19 SATELLITE
+----------------------- */
+
+async function loadGOES19() {
+    try {
+        const response = await fetch("/api/goes19");
+
+        if (!response.ok) {
+            throw new Error("GOES-19 API error");
+        }
+
+        const data = await response.json();
+
+        document.getElementById("goes19").innerHTML = `
+            <div class="label">${show(data.product)} — ${show(data.sector)}</div>
+
+            <img
+                src="${data.image_url}?t=${Date.now()}"
+                alt="GOES-19 GeoColor satellite imagery"
+                style="width:100%; margin-top:15px; border-radius:8px;"
+            >
+
+            <p>Live GOES-19 ${show(data.product)} imagery</p>
+        `;
+
+    } catch (error) {
+        document.getElementById("goes19").innerHTML =
+            `<p class="error">GOES-19 imagery temporarily unavailable.</p>`;
+    }
+}
+
+/* -------------------------
+   START APPLICATION
+------------------------- */
+
+
+
+async function renderENSOTrend(history) {
+    const chart = document.getElementById("ensoTrend");
+    if (!chart) return;
+    try {
+        if (!window.Plotly) throw new Error("Chart library unavailable");
+        if (!Array.isArray(history) || history.length < 2 ||
+            history.some(row => !Number.isFinite(row.roni_c)))
+            throw new Error("History unavailable");
+        chart.textContent = "";
+        await Plotly.newPlot(chart, [{
+            x: history.map(row => row.season + " " + row.year),
+            y: history.map(row => row.roni_c),
+            type: "scatter", mode: "lines+markers",
+            line: {color: "#55b7ff", width: 3},
+            marker: {size: 5},
+            hovertemplate: "%{x}<br>RONI: %{y:.2f} °C<extra></extra>"
+        }], {
+            paper_bgcolor: "#0c2038", plot_bgcolor: "#0c2038",
+            font: {color: "#e8f1ff"},
+            margin: {l: 65, r: 20, t: 15, b: 65},
+            xaxis: {type: "category", dtick: 4, tickangle: -25,
+                    gridcolor: "#193a59"},
+            yaxis: {title: {text: "RONI (°C)"}, gridcolor: "#193a59",
+                    zerolinecolor: "#9db7cf"}
+        }, {responsive: true, displayModeBar: false});
+    } catch (error) {
+        chart.textContent = "History chart temporarily unavailable.";
+    }
+}
+async function loadENSO() {
+    const panel = document.getElementById("enso");
+    const status = document.getElementById("ensoStatus");
+    try {
+        const response = await fetch("/api/enso");
+        if (!response.ok) throw new Error("ENSO unavailable");
+        const data = await response.json();
+        const latest = data.latest;
+        if (!Number.isFinite(latest.roni_c) ||
+            !Number.isFinite(data.change_c)) throw new Error("Invalid data");
+        const signed = n => (n > 0 ? "+" : "") + n.toFixed(2);
+        panel.innerHTML = `
+            <div class="label">Relative Oceanic Niño Index · Three-month average</div>
+            <div class="big">${signed(latest.roni_c)} °C / ${signed(latest.roni_c * 1.8)} °F</div>
+            <p>Observation season: ${latest.season} ${latest.year}</p>
+            <p>Change from previous season: ${signed(data.change_c)} °C / ${signed(data.change_c * 1.8)} °F</p>
+            <p class="label">Retrieved: ${new Date(data.retrieved_at_utc).toISOString()}</p>
+            <a href="https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/enso/roni/"
+               target="_blank" rel="noopener" style="color:#55b7ff">Source: NOAA CPC</a>
+        `;
+        window.ensoData = data;
+        if (typeof renderENSOTrend === "function") renderENSOTrend(data.history);
+        status.textContent = "AVAILABLE";
+        status.className = "online";
+    } catch (error) {
+        panel.textContent = "NOAA ENSO data temporarily unavailable.";
+        status.textContent = "UNAVAILABLE";
+        status.className = "error";
+    }
+}
+loadENSO();
+
+loadWeather();
+loadBuoy();
+loadGOES19();
+
+</script>
 
 </body>
-
 </html>
