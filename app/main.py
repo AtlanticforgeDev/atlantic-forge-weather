@@ -66,6 +66,21 @@ def buoy(station_id: str):
     values = lines[2].split()
 
     observation = dict(zip(headers, values))
+    from datetime import datetime, timezone
+    retrieved_at = datetime.now(timezone.utc)
+    try:
+        observed_at = datetime(
+            int(observation["YY"]), int(observation["MM"]),
+            int(observation["DD"]), int(observation["hh"]),
+            int(observation["mm"]), tzinfo=timezone.utc
+        )
+        age_minutes = int(
+            (retrieved_at - observed_at).total_seconds() // 60
+        )
+    except (KeyError, TypeError, ValueError):
+        observed_at = None
+        age_minutes = None
+
     from app.buoy_readings import recent_waves
     wave_observations = recent_waves(headers, lines, observation) 
 
@@ -98,6 +113,9 @@ def buoy(station_id: str):
     return {
         "station": station_id,
         "wave_observations": wave_observations,
+        "observed_at_utc": observed_at.isoformat() if observed_at else None,
+        "retrieved_at_utc": retrieved_at.isoformat(),
+        "age_minutes": age_minutes,
         "time": {
             "year": observation.get("YY"),
             "month": observation.get("MM"),

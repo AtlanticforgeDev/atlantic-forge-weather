@@ -306,6 +306,29 @@ async function loadBuoy(station = "44014") {
             <div class="big">
                 ${show(data.station)}
             </div>
+            <p class="label">
+                Latest station report:
+                ${data.observed_at_utc
+                    ? new Date(data.observed_at_utc).toLocaleString(
+                        undefined, {timeZoneName: "short"})
+                    : "Time unavailable"}
+            </p>
+            <p class="label">
+                ${Number.isInteger(data.age_minutes) && data.age_minutes >= 0
+                    ? data.age_minutes + " min old when retrieved"
+                    : "Report age unavailable"}
+            </p>
+            <p class="label">
+                Retrieved:
+                ${data.retrieved_at_utc
+                    ? new Date(data.retrieved_at_utc).toLocaleString(
+                        undefined, {timeZoneName: "short"})
+                    : "Time unavailable"}
+            </p>
+            <p class="label">
+                Wave readings may be older; their ages appear below.
+            </p>
+
 
 
             <div class="row">
